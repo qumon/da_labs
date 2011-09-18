@@ -79,7 +79,8 @@ class suffix_tree {
 			for(unsigned long j = j_i + 1; j <= i + 1; j++) {
 
 				unsigned long length;
-				suffix_tree_node* parent = insert(node, j + jump, i, length);
+				printf("try to insert S[%lu %lu] with jump %lu\n", j, i + 1, jump);
+				suffix_tree_node* parent = insert(node, j, i, length);
 
 				if( parent == NULL ) // 3rd rule => break phase
 					break;
@@ -91,9 +92,10 @@ class suffix_tree {
 					} else
 						jump--;
 					node = node->suffix_link_node;
-					jump = length - 1;
-				} else
+				} else {
 					jump = 0;
+					node = root; // not needed
+				}
 
 				if(prev_parent != NULL)
 					prev_parent->suffix_link_node = parent;
@@ -111,9 +113,9 @@ class suffix_tree {
 	// length is count of passed symbols before new node's parent (needed to pass symbols after jumping by suffix link)
 	suffix_tree_node* insert(suffix_tree_node* node, unsigned long j, unsigned long i, unsigned long& length) {
 
-		for(;;) {
+		length = 0;
 
-			length = 0;
+		for(;;) {
 
 			unsigned long j1, j2; // char counters for string and link
 			suffix_tree_link* link;
@@ -127,6 +129,8 @@ class suffix_tree {
 
 			// add new link and node directly to node
 			if( link == NULL ) {
+				if( i == 11 && j == 11)
+					printf("adding link: %lu - e \n", i + 1);
 				node->add_target(i + 1, E, new suffix_tree_node(j, node, NULL));
 				return node;
 			}
@@ -144,7 +148,7 @@ class suffix_tree {
 			} while (string[j1 - 1] == string[j2 - 1]);
 
 			if( go ) { // go to target node
-				length += ( link->end - link->start );
+				length += ( link->end - link->start + 1);
 				continue;
 			}
 
@@ -155,6 +159,7 @@ class suffix_tree {
 			link->target->add_target(j2, old_end, next);
 
 			// add new link with new node
+//			printf("adding link: %lu - e \n", j1);
 			link->target->add_target(j1, E, new suffix_tree_node(j, link->target, NULL));
 
 			// return parent of new node
