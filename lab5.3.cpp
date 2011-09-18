@@ -198,7 +198,8 @@ public:
 };
 
 int main() {
-	suffix_tree st("xabdabexabc");
+//	suffix_tree st("xabdabexabc");
+	suffix_tree st("axabaxaxaaxabx");
 	st.print();
 	return 0;
 }
