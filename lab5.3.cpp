@@ -115,11 +115,22 @@ class suffix_tree {
 
 		length = 0;
 
+		if( j == 8 && i + 1 == 10) {
+			printf("%c %c %c\n", string[7], string[8], string[9]);
+		}
+
 		for(;;) {
+
+			if( j == 8 && i + 1 == 10) {
+				printf("start\n");
+			}
 
 			unsigned long j1, j2; // char counters for string and link
 			suffix_tree_link* link;
 			for(link = node->first_link; link != NULL; link = link->next_link) {
+				if( j == 8 && i + 1 == 10) {
+					printf("%c * %c\n", string[j - 1], string[link->start - 1] );
+				}
 				if( string[j - 1] == string[link->start - 1] ) {
 					j1 = j;
 					j2 = link->start;
@@ -129,16 +140,24 @@ class suffix_tree {
 
 			// add new link and node directly to node
 			if( link == NULL ) {
-				if( i == 11 && j == 11)
+
+				if( j == 8 && i + 1 == 10) {
+
 					printf("adding link: %lu - e \n", i + 1);
+				}
+
 				node->add_target(i + 1, E, new suffix_tree_node(j, node, NULL));
 				return node;
 			}
 
 			bool go = false;
 			do {
-				if ( j1 == i + 1 ) // string in tree already
+				if ( j1 == i + 1 ) { // string in tree already ERROR!?
+					if( j == 8 && i + 1 == 10) {
+						printf("string in tree already\n");
+					}
 					return NULL; // do nothing
+				}
 				if ( j2 == link->end ) { // link is over
 					node = link->target; // go to next node
 					go = true;
@@ -149,6 +168,7 @@ class suffix_tree {
 
 			if( go ) { // go to target node
 				length += ( link->end - link->start + 1);
+				j = j1;
 				continue;
 			}
 
@@ -199,7 +219,8 @@ public:
 
 int main() {
 //	suffix_tree st("xabdabexabc");
-	suffix_tree st("axabaxaxaaxabx");
+//	suffix_tree st("axabaxaxaaxabx");
+	suffix_tree st("axabaxaxaax");
 	st.print();
 	return 0;
 }
