@@ -71,7 +71,7 @@ class suffix_tree {
 			unsigned long jump = 0;
 			bool first = true;
 
-			// node to make suffix link for this
+			// node to make suffix link for it
 			suffix_tree_node* prev_parent = NULL;
 
 			unsigned long j_star; // last j on previous phase
@@ -80,27 +80,36 @@ class suffix_tree {
 
 				unsigned long length;
 				printf("try to insert S[%lu %lu] with jump %lu\n", j, i + 1, jump);
-				suffix_tree_node* parent = insert(node, j, i, length);
+				suffix_tree_node* last_node; // last node on the searched path
+				bool result = insert(node, j, i, length, last_node);
 
-				if( parent == NULL ) // 3rd rule => break phase
+				if( result == false ) { // 3rd rule => break phase
+					if(prev_parent != NULL) {
+						printf("creating suffix link from %lu to %lu\n", prev_parent->label,last_node->label);
+						prev_parent->suffix_link_node = last_node; // suffix link to last node on the searched path
+					}
 					break;
+				}
 
-				if( parent->suffix_link_node != NULL ) {
+				if( last_node->suffix_link_node != NULL ) {
 					if( first ) {
 						jump = length - 1;
 						first = false;
 					} else
 						jump--;
+					printf("go from %lu to %lu by suffix link\n", node->label, node->suffix_link_node->label);
 					node = node->suffix_link_node;
 				} else {
 					jump = 0;
-					node = root; // not needed
+//					node = root; // not needed
 				}
 
-				if(prev_parent != NULL)
-					prev_parent->suffix_link_node = parent;
+				if(prev_parent != NULL) {
+					printf("creating suffix link from %lu to %lu\n", prev_parent->label, last_node->label);
+					prev_parent->suffix_link_node = last_node; // suffix link to parent of new node
+				}
 
-				prev_parent = parent;
+				prev_parent = last_node;
 
 				j_star = j;
 			}
@@ -109,81 +118,89 @@ class suffix_tree {
 		}
 	}
 
-	// returns new node's parent or NULL, if this path exists already
+	// returns 'true' if node was created and last_node - it's parent
+	// or 'false', if this path exists already and last_node - last node on path to it
 	// length is count of passed symbols before new node's parent (needed to pass symbols after jumping by suffix link)
-	suffix_tree_node* insert(suffix_tree_node* node, unsigned long j, unsigned long i, unsigned long& length) {
+	bool insert( suffix_tree_node* node, unsigned long j, unsigned long i, unsigned long& length, suffix_tree_node*& last_node ) {
 
 		length = 0;
 
-		if( j == 8 && i + 1 == 10) {
-			printf("%c %c %c\n", string[7], string[8], string[9]);
+		printf("inserting path: ");
+		for(unsigned long n = j; n <= i + 1; n++) {
+			printf("%c ", string[n - 1]);
 		}
+		printf("\n");
 
 		for(;;) {
 
-			if( j == 8 && i + 1 == 10) {
-				printf("start\n");
-			}
+			printf("in node %lu\n", node->label);
+
+//			if( j == 8 && i + 1 == 10) {
+//				printf("start\n");
+//			}
 
 			unsigned long j1, j2; // char counters for string and link
 			suffix_tree_link* link;
 			for(link = node->first_link; link != NULL; link = link->next_link) {
-				if( j == 8 && i + 1 == 10) {
-					printf("%c * %c\n", string[j - 1], string[link->start - 1] );
-				}
+
+				printf("compare: %c * %c\n", string[j - 1], string[link->start - 1] );
+
 				if( string[j - 1] == string[link->start - 1] ) {
 					j1 = j;
 					j2 = link->start;
+					printf("go to %c\n", string[j - 1]);
 					break;
 				}
 			}
 
 			// add new link and node directly to node
 			if( link == NULL ) {
-
-				if( j == 8 && i + 1 == 10) {
-
-					printf("adding link: %lu - e \n", i + 1);
-				}
-
+				printf("adding directly to node: %lu - E \n", i + 1);
 				node->add_target(i + 1, E, new suffix_tree_node(j, node, NULL));
-				return node;
+				last_node = node;
+				return true;
 			}
 
 			bool go = false;
 			do {
-				if ( j1 == i + 1 ) { // string in tree already ERROR!?
-					if( j == 8 && i + 1 == 10) {
-						printf("string in tree already\n");
-					}
-					return NULL; // do nothing
+				if ( j1 == i + 1 ) { // string in tree already
+					printf("string in tree already\n");
+					// do nothing
+					last_node = node;
+					return false;
 				}
 				if ( j2 == link->end ) { // link is over
+					printf("go to next node\n");
 					node = link->target; // go to next node
 					go = true;
 					break;
 				}
 				j1++; j2++;
+				printf("compare link's chars: %c * %c\n", string[j1 - 1], string[j2 - 1]);
 			} while (string[j1 - 1] == string[j2 - 1]);
 
 			if( go ) { // go to target node
 				length += ( link->end - link->start + 1);
-				j = j1;
+				j = j1 + 1;
 				continue;
 			}
 
 			// split old link
 			suffix_tree_node* next = link->target;
 			unsigned long old_end = link->end;
+			printf("split link %lu - %lu to %lu - %lu and %lu - %lu\n",
+					link->start, link->end,
+					link->start, j2 - 1, j2, link->end);
 			link->end = j2 - 1; link->target = new suffix_tree_node(j, node, NULL);
 			link->target->add_target(j2, old_end, next);
 
 			// add new link with new node
-//			printf("adding link: %lu - e \n", j1);
+			printf("adding link to separator node: %lu - E \n", j1);
 			link->target->add_target(j1, E, new suffix_tree_node(j, link->target, NULL));
 
 			// return parent of new node
-			return link->target;
+			last_node = link->target;
+			return true;
 		}
 	}
 
@@ -220,7 +237,8 @@ public:
 int main() {
 //	suffix_tree st("xabdabexabc");
 //	suffix_tree st("axabaxaxaaxabx");
-	suffix_tree st("axabaxaxaax");
+//	suffix_tree st("axabaxaxaax");
+	suffix_tree st("axabaxax");
 	st.print();
 	return 0;
 }
