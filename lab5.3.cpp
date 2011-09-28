@@ -1,5 +1,26 @@
 #include <stdio.h>
+#include <cstring>
+
 #define E 0
+#define MIN(X,Y) (((X) < (Y)) ? (X) : (Y))
+
+// compares two string and returns length of equal prefixes
+int compare(const char* str1, const char* str2, unsigned long& length) {
+	unsigned long i = 0;
+	while( str1[i] == str2[i] ) {
+		if( str1[i] == '\0' ) {
+			length = i;
+			return 0; // equal
+		}
+		i++;
+	}
+	length = i;
+	if( str1[i] > str2[i] ) {
+		return 1;
+	} else {
+		return -1;
+	}
+}
 
 struct suffix_tree_node;
 
@@ -108,13 +129,6 @@ class suffix_tree {
 				printf("length = %lu\n", length);
 
 				distance += length;
-
-//				if( first == true ) { // first in phase
-//					distance = length;
-//					first = false;
-//				}
-//				else if( distance > 0 )
-//					distance--; // transition to this node was by suffix link
 
 				printf("distance to last node: %lu\n", distance);
 
@@ -271,18 +285,23 @@ void print_node(suffix_tree_node* node, int deep) {
 }
 
 unsigned long* array;
+unsigned long* lcp_arr, * lcp_arr_pt;
 unsigned long index;
 
-void width(suffix_tree_node* node) {
-
+void walk(suffix_tree_node* node, unsigned long depth) {
 	for(suffix_tree_link* link = node->first_link; link != NULL; link = link->next_link) {
 		if(link->end != E) {
-			width(link->target);
+			walk(link->target, depth + link->end - link->start + 1 );
 		}
 		else {
 			array[index] = link->target->label;
-			printf("%lu ", link->target->label);
+			//printf("%lu ", link->target->label);
 			index++;
+		}
+		if (link->next_link != NULL) {
+			printf("%lu ", depth);
+			*lcp_arr_pt = depth;
+			lcp_arr_pt++;
 		}
 	}
 }
@@ -294,16 +313,26 @@ public:
 	}
 
 	unsigned long* get_suffix_array() {
-		printf("suffix array: \n");
+		printf("suffix array length %lu: \n", e);
 		array = new unsigned long[e];
 		index = 0;
-		width(root);
+		lcp_arr = lcp_arr_pt = new unsigned long [e - 1];
+		printf("walk depths:\n");
+		walk(root, 0);
 		printf("\n");
 		return array;
 	}
 
+	unsigned long* get_lcp_arr() {
+		return lcp_arr;
+	}
+
 	unsigned long get_size() {
 		return e;
+	}
+
+	const char* get_string() {
+		return string;
 	}
 
 	suffix_tree(const char* string) {
@@ -315,40 +344,198 @@ public:
 
 };
 
-int main() {
-//	suffix_tree st("xabdabexabc");
-//	suffix_tree st("axabaxaxaaxabx");
-//	suffix_tree st("axabaxaxaax");
-//	suffix_tree st("axabaxax");
-//	suffix_tree st("");
-//	suffix_tree st("abc");
-//	suffix_tree st("abaab$");
-//	suffix_tree st("mama$");
-//	suffix_tree st("tartar$");
-//	const char* str = "axabadxaxdaxa$";
-//	const char* str = "tartar$";
-//	const char* str = "axabaxaxaaxxaxaxaxxxaxbbxbxabxabxabxabbabbxabxbbxabxab$"; // WRONG!
-//	const char* str = "axabaxaxaaxxaxaxaxxxaxbbxbxabxabxabxabbabbxabxbbxabxabaxaaababababbabbabxabbaxabxabxbaxbxbaaxbbxabxabxabxabxabxxabxabxabxbaxbaxbaxbaxbaxbabxabxabxabxxaxbaxabxaxbbbxabxabxabxxxabxabxaxxxabxaxxxaxxaxaxaxaxxxaxaxxaxxxaxaxxxaxxxaxxaxbxabxabxaxabxabxabxabxabxabxabxaxbaxbaxbaxbxabaxbaxaxbaxbaxbaxbxaxbaxbaxbxaxabxaxxbaxabxaxaxaxabxaxa$";
-//	const char* str = "axabaxaxaaxxaxaxaxxxaxbb$"; // WRONG
-//	const char* str = "axabaxaxaaxxaxaxaxxxa$"; // NORMAL
-//	const char* str = "axabaxaxaaxxaxaxaxxxax$"; // NORMAL
+struct lcp_tree_node {
 
-	const char* str = "ybycqbdyycyaybabcdcdaabcdbcddabcddabcdbabcdcabcabcddabcddabcdabcabcddaabcabcabcdddbcdabcdabcdabcdabcd$";
+	unsigned long value;
+
+	lcp_tree_node* left_node;
+	lcp_tree_node* right_node;
+
+
+	lcp_tree_node(unsigned long left, unsigned long right, unsigned long* lcp_arr) {
+		if(right != left + 1) {
+			unsigned long middle = (left + right) / 2; // TODO: fix
+			left_node = new lcp_tree_node(left, middle, lcp_arr);
+			right_node = new lcp_tree_node(middle, right, lcp_arr);
+			value = MIN( left_node->value, right_node->value );
+		} else {
+			value = lcp_arr[left];
+		}
+		printf("interval [%lu %lu] value = %lu\n", left, right, value);
+	}
+
+};
+
+struct lcp_tree {
+
+	unsigned long* lcp_arr; // array of lcp between neigbour suffixes in suffix array
+
+	lcp_tree_node* root;
+
+public:
+
+	lcp_tree(suffix_tree& st) {
+		lcp_arr = st.get_lcp_arr();
+		printf("lcp_arr\n");
+		for (unsigned long i = 0; i < st.get_size() - 1; i++) {
+			printf("%lu ", lcp_arr[i]);
+		}
+		printf("\n");
+		unsigned long L = 1, R = st.get_size() - 1;
+		root = new lcp_tree_node(L, R, lcp_arr);
+	}
+
+};
+
+class suffix_array {
+
+	const char* string;
+	unsigned long* pos;
+	unsigned long size;
+	lcp_tree* lt;
+	lcp_tree_node* lcp_node;
+
+	// returns count of equal chars at start of pattern and suffix string[pos .. size - 1]
+	unsigned long match_prefix_length(const char* pattern, unsigned long n) {
+
+		unsigned long j = 0;
+		printf("%s\n", string);
+		printf("%s\n", string + n - 1);
+		printf("n = %lu\n", n);
+		for(unsigned long i = n - 1; i < size; i++) {
+			printf("comparing %c * %c\n", pattern[j], string[i]);
+			if ( pattern[j] != string[i] ) {
+				break;
+			}
+			j++;
+		}
+		printf("returned value: %lu\n", j);
+		return j;
+	}
+
+public:
+
+	suffix_array(suffix_tree& st) {
+		string = st.get_string();
+		pos = st.get_suffix_array();
+		size = st.get_size();
+
+		// tree to find lcp(i, j) values fast
+		lcp_tree lt(st);
+	}
+
+	// prints suffixies according numbers in array
+	void print(FILE* file) {
+		for(unsigned long i = 0; i < size; i++) {
+			for(unsigned long j = pos[i]; j < size + 1; j++) {
+				fprintf(file, "%c", string[j - 1]);
+			}
+			fprintf(file, "\n");
+		}
+	}
+
+	// TODO: make private
+	bool decision( const char* pattern, unsigned long M, unsigned long& L, unsigned long& R, unsigned long& l, unsigned long& r ) {
+		unsigned long lcp = lcp_node->value;
+		if( lcp > l) {
+			L = M;
+		} else if ( lcp < l ) {
+			R = M;
+			r = lcp;
+		} else { // lcp == l
+			unsigned long length;
+			int result = compare(pattern + l + 1, string + l + 1 + pos[M], length);
+			if ( result < 0 ) {
+				R = M;
+				lcp_node = lcp_node->left_node; // go left child
+				r = lcp + length;
+			} else if ( result > 0 ) {
+				L = M;
+				lcp_node = lcp_node->right_node; // go right child
+				l = lcp + length;
+			} else {
+				return true; // found
+			}
+		}
+		return false;
+	}
+
+	unsigned long search(const char* pattern) {
+
+		lcp_node = lt->root; // set root lcp value
+
+		unsigned long L = 1, R = size - 1; // pos[0] is "$"
+		printf("suze = %lu\n", size);
+
+//		printf("%lu\n", match_prefix_length("aabcab", 2)); // test
+
+		printf("pos[L] = %lu pos[R] = %lu\n", pos[L], pos[R]);
+
+		unsigned long l = match_prefix_length(pattern, pos[L]);
+		unsigned long r = match_prefix_length(pattern, pos[R]);
+		unsigned long M;
+
+		for(;;) {
+
+			M = (L + R) / 2; //TODO: correct this by Bloch article
+
+			if(l == r) { // == lcp
+				unsigned long length;
+				int result = compare(pattern + l + 1, string + l + 1 + pos[M], length);
+				if ( result < 0 ) {
+					R = M;
+					lcp_node = lcp_node->left_node; // go left child
+					r += length;
+				} else if ( result > 0 ) {
+					L = M; // lcp == l
+					lcp_node = lcp_node->right_node; // go to right child
+					l += length;
+				} else {
+					break; // found
+					printf("!found at %lu ", l);
+				}
+				continue;
+			}
+
+			bool result = (l > r) ? decision(pattern, M, L, R, l, r) : decision(pattern, M, R, L, r, l);
+
+//			if(l > r) {
+//				result = decision(pattern, M, L, R, l, r);
+//			} else {
+//				result = decision(pattern, M, R, L, r, l);
+//			}
+
+			if(result == true) {
+				printf("found at %lu ", M);
+				break;
+			} else {
+				continue;
+			}
+		}
+		return 0;
+	}
+
+};
+
+int main() {
+
+	const char* str = "tartar$";
 
 	suffix_tree st(str);
 	st.print();
-	unsigned long* suffix_array = st.get_suffix_array();
-	unsigned long size = st.get_size();
 
 	FILE* file = fopen("sarr.txt", "w");
 
-	for(unsigned long i = 0; i < size; i++) {
-		for(unsigned long j = suffix_array[i]; j < size + 1; j++) {
-			fprintf(file, "%c", str[j - 1]);
-		}
-		fprintf(file, "\n");
-	}
+	suffix_array sa(st);
+	sa.print(file);
+	sa.search("ta");
 	fclose(file);
+
+
+//	unsigned long len;
+//	int s = compare("a", "a", len);
+//	printf("%d %lu", s, len);
+
 	return 0;
 }
 
