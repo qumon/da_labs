@@ -26,12 +26,20 @@ int starts_with(const char* str1, const char* str2, unsigned long& length ) {
 }
 
 bool starts(const char* str1, const char* str2, unsigned long skip) {
+	printf("comparing %s & %s skip = %lu\n", str1, str2, skip);
 	unsigned long n = skip - 1;
-	while(n > 0) {
-		if(str1[n] != str2[n])
+	for(;;) {
+		printf("n = %lu ", n);
+		printf("char cmpr c1=%c c2=%c\n", str1[n], str2[n]);
+		if(str1[n] != str2[n]) {
+			printf("false\n");
 			return false;
+		}
+		if(n == 0)
+			break;
 		n--;
 	}
+	printf("true\n");
 	return true;
 }
 
@@ -441,6 +449,7 @@ public:
 	// prints suffixies according numbers in array
 	void print(FILE* file) {
 		for(unsigned long i = 0; i < size; i++) {
+			fprintf(file, "%lu ", i);
 			for(unsigned long j = pos[i]; j < size + 1; j++) {
 				fprintf(file, "%c", string[j - 1]);
 			}
@@ -448,134 +457,26 @@ public:
 		}
 	}
 
-	// TODO: make private
-	bool decision( const char* pattern, unsigned long M, unsigned long& L, unsigned long& R,
-					unsigned long& l, unsigned long& r, bool direct ) {
-
-		// Getting lcp(L, M) (direct) or lcp(M, R) (inverse)
-		lcp_node = (direct) ? lcp_node->left_node : lcp_node->right_node; // go left child
-
-		unsigned long lcp = lcp_node->value;
-
-		if(direct)
-			printf("lcp(%lu, %lu) = %lu\n", L, M, lcp);
-		else
-			printf("lcp(%lu, %lu) = %lu\n", M, L, lcp);
-
-
-		if( lcp > l) {
-			L = M;
-		} else if ( lcp < l ) {
-			R = M;
-			r = lcp; // r <- LCP(L, M)
-		} else { // lcp == l
-			unsigned long length;
-			int result = starts_with(pattern + l, string + l + pos[M] - 1, length); // TODO: fix -1!
-			if ( result < 0 ) {
-				R = M;
-				r = l + length;
-			} else if ( result > 0 ) {
-				L = M;
-				l = l + length;
-			} else {
-				return true; // found
-			}
-		}
-		return false;
-	}
-
-	unsigned long search(const char* pattern) {
-
-		unsigned long pattern_len = strlen(pattern);
-
-		lcp_node = lt->root; // set root lcp value
-
-		unsigned long L = 1, R = size - 1; // pos[0] is "$"
-		printf("size = %lu\n", size);
-
-//		printf("%lu\n", match_prefix_length("aabcab", 2)); // test
-
-		printf("pos[L] = %lu pos[R] = %lu\n", pos[L], pos[R]);
-
-		unsigned long l = match_prefix_length(pattern, pos[L]);
-		unsigned long r = match_prefix_length(pattern, pos[R]);
-		unsigned long M;
-
-		for(;;) {
-
-			printf("interval [%lu - %lu]\n", L, R);
-
-			M = (L + R) / 2; //TODO: correct this by Bloch article
-
-			printf("M = %lu\n", M);
-			printf("l = %lu, r = %lu\n", l, r);
-
-			if(l == pattern_len) { // ??
-
-				printf("!!found at %lu", pos[l]);
-				break;
-
-			}
-
-			if(l == r) { // == lcp
-				unsigned long length;
-				printf("pos[M] = %lu\n", pos[M]);
-				const char* str = string + l + pos[M] - 1;
-				printf("compare to string:\n");
-				while (*str != '\0') {
-					printf("%c", *str);
-					str++;
-				}
-				printf("\n");
-				int result = starts_with(pattern + l, string + l + pos[M], length);
-				if ( result < 0 ) {
-					R = M;
-					lcp_node = lcp_node->left_node; // go left child
-					r += length;
-				} else if ( result > 0 ) {
-					L = M; // lcp == l
-					lcp_node = lcp_node->right_node; // go to right child
-					l += length;
-				} else {
-					printf("!found at %lu ", pos[M] );
-					break; // found
-				}
-				continue;
-			}
-
-			bool result = (l > r) ? decision(pattern, M, L, R, l, r, true) : decision(pattern, M, R, L, r, l, false);
-
-//			if(l > r) {
-//				result = decision(pattern, M, L, R, l, r);
-//			} else {
-//				result = decision(pattern, M, R, L, r, l);
-//			}
-
-			if(result == true) {
-				printf("found at %lu ", pos[M] );
-				break;
-			} else {
-				continue;
-			}
-		}
-		return 0;
-	}
-
+	// find left and rigth borders of matching interval of pos array (based on founded value M)
 	void expand( const char* pattern, unsigned long M, unsigned long skip ) {
+		unsigned long start, end;
 		printf("***\n");
-		unsigned long n = M;
+		unsigned long n = M - 1;
 		while (starts(pattern, string + pos[n] - 1, skip) && n > 0) {
 			n--;
 		}
 		n++;
+		start = n;
 		while(n <= M) {
-			printf("%lu ", pos[n]);
+			printf("%lu -", pos[n]);
 			n++;
 		}
 		while (starts(pattern, string + pos[n] - 1, skip) && n < size) {
-			printf("%lu ", pos[n]);
+			printf("%lu !", pos[n]);
 			n++;
 		}
+		end = n - 1;
+		printf("start %lu, end %lu", start, end);
 		printf("\n");
 	}
 
@@ -601,13 +502,14 @@ public:
 			M = (L + R) / 2;
 			printf("M = %lu\n", M);
 			if(r > l) {
+				lcp_tree_node* parent = lcp_node;
 				lcp_node = lcp_node->right_node;
 
 				if(lcp_node == NULL) { // ??
 					unsigned long length;
 					if (starts_with(pattern + r, string + pos[R] - 1 + r, length ) == 0) {
 						printf(".found at %lu , M = %lu\n", pos[R], R);
-						expand(pattern, R, r);
+						expand(pattern, R, r + length);
 						break;
 					} else {
 						printf("not found at %lu , M = %lu\n", pos[R], R);
@@ -620,35 +522,40 @@ public:
 				if(r > lcp_node->value) { // pos[M] < P // example
 					L = M;
 					l = lcp_node->value;
+					// way in lcp tree in true
 				} else if ( r < lcp_node->value) {
 					// !!!???
 					R = M;
+					lcp_node = parent->left_node; // correct way in lcp tree
 				} else { // r == lcp_node->value // example
 					unsigned long length;
 					int result = starts_with(pattern + r, string + pos[M] - 1 + r, length);
 					if(result > 0) {
 						L = M;
 						l = r + length;
+						// way in lcp tree is true
 					} else if ( result < 0) {
 						R = M;
 						r += length;
+						lcp_node = parent->left_node; // correct way in lcp tree
 					} else { // result == 0
 						printf("found at %lu , M = %lu\n", pos[M], M);
-						expand(pattern, M, r);
+						expand(pattern, M, r + length);
 						break;
 					}
 				}
 			} else if (r < l) {
+				lcp_tree_node* parent = lcp_node;
 				lcp_node = lcp_node->left_node;
 
 				if(lcp_node == NULL) {
 					unsigned long length;
-					if (starts_with(pattern + r, string + pos[R] - 1 + r, length ) == 0) {
-						printf(".found at %lu , M = %lu\n", pos[R], R);
-						expand(pattern, R, r);
+					if (starts_with(pattern + l, string + pos[L] - 1 + l, length ) == 0) {
+						printf(".found at %lu , M = %lu\n", pos[L], L);
+						expand(pattern, L, l + length);
 						break;
 					} else {
-						printf("not found at %lu , M = %lu\n", pos[R], R);
+						printf("not found at %lu , M = %lu\n", pos[L], L);
 						return -1;
 					}
 				}
@@ -659,21 +566,25 @@ public:
 					/// !!!
 					R = M;
 					r = lcp_node->value;
+					// way in lcp tree is true
 				} else if ( l < lcp_node->value) {
 					/// !!!
 					L = M;
+					lcp_node = parent->right_node; // correct way in lcp tree
 				} else { // l == lcp_node->value
 					unsigned long length;
 					int result = starts_with(pattern + l, string + pos[M] - 1 + l, length);
 					if(result > 0) {
 						L = M;
 						l += length;
+						lcp_node = parent->right_node; // correct way in lcp tree
 					} else if ( result < 0) {
 						R = M;
 						r = l + length;
+						// way in lcp tree is true
 					} else { // result == 0
 						printf("//found at %lu , M = %lu\n", pos[M], M );
-						expand(pattern, M, l);
+						expand(pattern, M, l + length);
 						break;
 					}
 				}
@@ -688,6 +599,7 @@ public:
 						return -1;
 					}
 					R = M;
+					printf("l==r go to left lcp\n");
 					lcp_node = lcp_node->left_node; // go left child
 					r += length;
 				} else if ( result > 0 ) {
@@ -696,11 +608,12 @@ public:
 						return -1;
 					}
 					L = M; // lcp == l
+					printf("l==r go to right lcp\n");
 					lcp_node = lcp_node->right_node; // go to right child
 					l += length;
 				} else {
 					printf("!found at %lu , M = %lu\n", pos[M], M );
-					expand(pattern, M, l);
+					expand(pattern, M, l + length);
 					break; // found
 				}
 			}
@@ -711,8 +624,11 @@ public:
 
 int main() {
 
-	const char* str = "tartatarz$";
+//	const char* str = "tartatarz$";
 //	const char* str = "mississippi$";
+//	const char* str = "axabaxaxaaxxaxaxaxxxaxbbxbxabxabxabxabbabbxabxbbxabxabaxaaababababbabbabxabbaxabxabxbaxbxbaaxbbxabxabxabxabxabxxabxabxabxbaxbaxbaxbaxbaxbabxabxabxabxxaxbaxabxaxbbbxabxabxabxxxabxabxaxxxabxaxxxaxxaxaxaxaxxxaxaxxaxxxaxaxxxaxxxaxxaxbxabxabxaxabxabxabxabxabxabxabxaxbaxbaxbaxbxabaxbaxaxbaxbaxbaxbxaxbaxbaxbxaxabxaxxbaxabxaxaxaxabxaxa$";
+
+	const char* str = "ybycqbdyycyaybabcdcdaabcdbcddabcddabcdbabcdcabcabcddabcddabcdabcabcddaabcabcabcdddbcdabcdabcdabcdabcd$";
 
 	suffix_tree st(str);
 	st.print();
@@ -723,12 +639,12 @@ int main() {
 	sa.print(file);
 	fclose(file);
 	// i !
-	sa.search_new("ta");
+	sa.search_new("abcab");
 
 
 
 //	unsigned long len;
-//	int s = starts_with("i", "ippi", len);
+//	int s = starts_with("abax", "axbbxbxabxabxabxabbabbxabxbbxabxab$", len);
 //	printf("%d %lu\n", s, len);
 
 	return 0;
