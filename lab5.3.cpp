@@ -13,7 +13,7 @@ int starts_with(const char* str1, const char* str2, unsigned long& length ) {
 			length = i;
 			return 0; // prefix
 		}
-		printf("comparing chars %c %c\n", str1[i], str2[i]);
+//		printf("comparing chars %c %c\n", str1[i], str2[i]);
 		if ( str1[i] != str2[i] )
 			break;
 		i++;
@@ -28,20 +28,20 @@ int starts_with(const char* str1, const char* str2, unsigned long& length ) {
 
 // return true if str2 starts with str1, comparing starts from skip - 1 chars
 bool starts(const char* str1, const char* str2, unsigned long skip) {
-	printf("comparing %s & %s skip = %lu\n", str1, str2, skip);
+//	printf("comparing %s & %s skip = %lu\n", str1, str2, skip);
 	unsigned long n = skip - 1;
 	for(;;) {
-		printf("n = %lu ", n);
-		printf("char cmpr c1=%c c2=%c\n", str1[n], str2[n]);
+//		printf("n = %lu ", n);
+//		printf("char cmpr c1=%c c2=%c\n", str1[n], str2[n]);
 		if(str1[n] != str2[n]) {
-			printf("false\n");
+//			printf("false\n");
 			return false;
 		}
 		if(n == 0)
 			break;
 		n--;
 	}
-	printf("true\n");
+//	printf("true\n");
 	return true;
 }
 
@@ -186,38 +186,38 @@ class suffix_tree {
 			for(unsigned long j = j_i + 1; j <= i + 1; j++) {
 
 
-				printf("try to insert S[%lu %lu]\n", j + skip, i + 1);
+//				printf("try to insert S[%lu %lu]\n", j + skip, i + 1);
 				suffix_tree_node* last_node; // last node on the searched path
 				suffix_tree_node* parent_node; // parent of new fork or == last_node if no fork was created
 
 				unsigned long length;
 
 				bool result = insert(node, j, skip, i, parent_node, last_node, length);
-				printf("length = %lu\n", length);
+//				printf("length = %lu\n", length);
 
 				distance += length;
 
-				printf("distance to last node: %lu\n", distance);
+//				printf("distance to last node: %lu\n", distance);
 
 				skip = (distance > 1) ? distance - 1 : 0;
 
-				if(j != i + 1)
-					printf("next skip = %lu\n", skip);
+//				if(j != i + 1)
+//					printf("next skip = %lu\n", skip);
 
-				if(last_node != parent_node)
-					printf("fork parent: %lu last: %lu\n", parent_node->label, last_node->label);
+//				if(last_node != parent_node)
+//					printf("fork parent: %lu last: %lu\n", parent_node->label, last_node->label);
 
 				if( result == false ) { // 3rd rule => break phase
 					if(prev_last != NULL) {
-						printf("creating suffix link from %lu to %lu\n", prev_last->label,last_node->label);
+//						printf("creating suffix link from %lu to %lu\n", prev_last->label,last_node->label);
 						prev_last->suffix_link_node = last_node; // suffix link to last node on the searched path
 					}
 					break;
 				}
 
-				printf("parent: %lu suffix_link: %lu\n", parent_node->label, parent_node->suffix_link_node->label);
+//				printf("parent: %lu suffix_link: %lu\n", parent_node->label, parent_node->suffix_link_node->label);
 				if( parent_node->suffix_link_node != NULL ) {
-					printf("go from %lu to %lu by suffix link\n", parent_node->label, parent_node->suffix_link_node->label);
+//					printf("go from %lu to %lu by suffix link\n", parent_node->label, parent_node->suffix_link_node->label);
 					node = parent_node->suffix_link_node;
 					distance = (distance != 0) ? distance - 1 : 0;
 				} else {
@@ -226,7 +226,7 @@ class suffix_tree {
 				}
 
 				if(prev_last != NULL) {
-					printf("creating suffix link from %lu to %lu\n", prev_last->label, last_node->label);
+//					printf("creating suffix link from %lu to %lu\n", prev_last->label, last_node->label);
 					prev_last->suffix_link_node = last_node; // suffix link to last node on path to new node
 				}
 
@@ -245,43 +245,43 @@ class suffix_tree {
 	bool insert( suffix_tree_node* node, unsigned long j, unsigned long skip, unsigned long i,
 			suffix_tree_node*& parent_node, suffix_tree_node*& last_node, unsigned long& distance ) {
 
-		printf("leaf label: %lu\n", j);
+//		printf("leaf label: %lu\n", j);
 		unsigned long leaf_label = j;
 
 		j += skip;
 
-		printf("j after skip: %lu\n", j);
+//		printf("j after skip: %lu\n", j);
 
 		// distance to last node
 		distance = 0;
 
-		printf("inserting path: ");
-		for(unsigned long n = j; n <= i + 1; n++) {
-			printf("%c ", string[n - 1]);
-		}
-		printf("\n");
+//		printf("inserting path: ");
+//		for(unsigned long n = j; n <= i + 1; n++) {
+//			printf("%c ", string[n - 1]);
+//		}
+//		printf("\n");
 
 		for(;;) {
 
-			printf("in node %lu\n", node->label);
+//			printf("in node %lu\n", node->label);
 
 			unsigned long j1, j2; // char counters for string and link
 			suffix_tree_link* link;
 			for(link = node->first_link; link != NULL; link = link->next_link) {
 
-				printf("compare: %c * %c\n", string[j - 1], string[link->start - 1] );
+//				printf("compare: %c * %c\n", string[j - 1], string[link->start - 1] );
 
 				if( string[j - 1] == string[link->start - 1] ) {
 					j1 = j;
 					j2 = link->start;
-					printf("go to %c\n", string[j - 1]);
+//					printf("go to %c\n", string[j - 1]);
 					break;
 				}
 			}
 
 			// add new link and node directly to node
 			if( link == NULL ) {
-				printf("adding directly to node: %lu - E \n", i + 1);
+//				printf("adding directly to node: %lu - E \n", i + 1);
 				node->add_target(i + 1, E, new suffix_tree_node(leaf_label, node, NULL), string);
 				parent_node = last_node = node;
 				return true;
@@ -290,19 +290,19 @@ class suffix_tree {
 			bool go = false;
 			do {
 				if ( j1 == i + 1 ) { // string in tree already
-					printf("string in tree already\n");
+//					printf("string in tree already\n");
 					// do nothing
 					parent_node = last_node = node;
 					return false;
 				}
 				if ( j2 == link->end ) { // link is over
-					printf("go to next node\n");
+//					printf("go to next node\n");
 					node = link->target; // go to next node
 					go = true;
 					break;
 				}
 				j1++; j2++;
-				printf("compare link's chars: %c * %c\n", string[j1 - 1], string[j2 - 1]);
+//				printf("compare link's chars: %c * %c\n", string[j1 - 1], string[j2 - 1]);
 			} while (string[j1 - 1] == string[j2 - 1]);
 
 			if( go ) { // go to target node
@@ -314,14 +314,14 @@ class suffix_tree {
 			// split old link
 			suffix_tree_node* next = link->target;
 			unsigned long old_end = link->end;
-			printf("split link %lu - %lu to %lu - %lu and %lu - %lu\n",
-					link->start, link->end,
-					link->start, j2 - 1, j2, link->end);
+//			printf("split link %lu - %lu to %lu - %lu and %lu - %lu\n",
+//					link->start, link->end,
+//					link->start, j2 - 1, j2, link->end);
 			link->end = j2 - 1; link->target = new suffix_tree_node(j, node, NULL);
 			link->target->add_target(j2, old_end, next, string);
 
 			// add new link with new node
-			printf("adding link to separator node: %lu - E \n", j1);
+//			printf("adding link to separator node: %lu - E \n", j1);
 			link->target->add_target(j1, E, new suffix_tree_node(leaf_label, link->target, NULL), string);
 
 			// return parent of new node
@@ -331,12 +331,15 @@ class suffix_tree {
 		}
 	}
 
+
+// for debug
 void print_spaces(int n) {
 	for(int i = 0; i < n; i++) {
 		printf(" ");
 	}
 }
 
+// for debug
 void print_node(suffix_tree_node* node, int deep) {
 	print_spaces(deep);
 	printf("node: %lu", node->label);
@@ -366,7 +369,7 @@ void walk(suffix_tree_node* node, unsigned long depth) {
 			index++;
 		}
 		if (link->next_link != NULL) {
-			printf("%lu ", depth);
+//			printf("%lu ", depth);
 			*lcp_arr_pt = depth;
 			lcp_arr_pt++;
 		}
@@ -380,13 +383,13 @@ public:
 	}
 
 	unsigned long* get_suffix_array() {
-		printf("suffix array length %lu: \n", e);
+//		printf("suffix array length %lu: \n", e);
 		array = new unsigned long[e];
 		index = 0;
 		lcp_arr = lcp_arr_pt = new unsigned long [e - 1];
-		printf("walk depths:\n");
+//		printf("walk depths:\n");
 		walk(root, 0);
-		printf("\n");
+//		printf("\n");
 		return array;
 	}
 
@@ -420,7 +423,10 @@ struct lcp_tree_node {
 
 
 	lcp_tree_node(unsigned long left, unsigned long right, unsigned long* lcp_arr) {
-		if(right != left + 1) {
+
+		if(left == right && left == 1) {
+			value = lcp_arr[0];
+		} else if( right != left + 1 ) {
 			unsigned long middle = (left + right) / 2; // TODO: fix
 			left_node = new lcp_tree_node(left, middle, lcp_arr);
 			right_node = new lcp_tree_node(middle, right, lcp_arr);
@@ -429,7 +435,7 @@ struct lcp_tree_node {
 			left_node = right_node = NULL;
 			value = lcp_arr[left];
 		}
-		printf("interval [%lu %lu] value = %lu\n", left, right, value);
+//		printf("interval [%lu %lu] value = %lu\n", left, right, value);
 	}
 
 };
@@ -444,11 +450,11 @@ public:
 
 	lcp_tree(suffix_tree& st) {
 		lcp_arr = st.get_lcp_arr();
-		printf("lcp_arr\n");
-		for (unsigned long i = 0; i < st.get_size() - 1; i++) {
-			printf("%lu ", lcp_arr[i]);
-		}
-		printf("\n");
+//		printf("lcp_arr\n");
+//		for (unsigned long i = 0; i < st.get_size() - 1; i++) {
+//			printf("%lu ", lcp_arr[i]);
+//		}
+//		printf("\n");
 		unsigned long L = 1, R = st.get_size() - 1;
 		root = new lcp_tree_node(L, R, lcp_arr);
 	}
@@ -477,47 +483,48 @@ class suffix_array {
 			}
 			j++;
 		}
-		printf("returned value: %lu\n", j);
+//		printf("returned value: %lu\n", j);
 		return j;
 	}
 	// find left and rigth borders of matching interval of pos array (based on founded value M)
 	void expand( const char* pattern, unsigned long M, unsigned long skip ) {
 		unsigned long start, end;
-		printf("***\n");
 		unsigned long n = M - 1;
 		while (starts(pattern, string + pos[n] - 1, skip) && n > 0) {
 			n--;
 		}
 		n++;
 		start = n;
-		while(n <= M) {
-			printf("%lu -", pos[n]);
-			n++;
-		}
+//		while(n <= M) {
+//			printf("%lu -", pos[n]);
+//			n++;
+//		}
+		n = M;
 		while (starts(pattern, string + pos[n] - 1, skip) && n < size) {
-			printf("%lu !", pos[n]);
 			n++;
 		}
 		end = n - 1;
-		printf("start %lu, end %lu", start, end);
+//		printf("start %lu, end %lu", start, end);
 
-		printf("\n");
+//		printf("\n");
 		// output unsorted array:
-		printf("unsorted array\n");
-		for(unsigned long i = start; i <= end; i++) {
-			printf("%lu ", pos[i]);
-		}
-		printf("\n");
+//		printf("unsorted array\n");
+//		for(unsigned long i = start; i <= end; i++) {
+//			printf("%lu ", pos[i]);
+//		}
+//		printf("\n");
 		// copy suffix array interval
 		unsigned long size = end - start + 1;
 		unsigned long* result = new unsigned long[ size ];
 		memcpy(result, pos + start, size * sizeof(unsigned long));
 		quicksort(result, size, compare);
 
+		// RESULT OUTPUT
 		for(unsigned long i = 0; i < size; i++) {
-			printf("%lu ", result[i]);
+			printf("%lu", result[i]);
+			if(i != size - 1)
+				printf(", ");
 		}
-		printf("\n");
 		delete[] result;
 	}
 
@@ -532,6 +539,7 @@ public:
 		lt = new lcp_tree(st);
 	}
 
+	// debug method
 	// prints suffixies according numbers in array
 	void print(FILE* file) {
 		for(unsigned long i = 0; i < size; i++) {
@@ -544,7 +552,7 @@ public:
 	}
 
 	int search_new(const char* pattern) {
-		printf("starting search...\n");
+//		printf("starting search...\n");
 
 		lcp_node = lt->root; // set root lcp value
 
@@ -561,9 +569,9 @@ public:
 
 			iter++;
 
-			printf("L = %lu R = %lu l = %lu r = %lu\n", L, R, l, r);
+//			printf("L = %lu R = %lu l = %lu r = %lu\n", L, R, l, r);
 			M = (L + R) / 2;
-			printf("M = %lu\n", M);
+//			printf("M = %lu\n", M);
 			if(r > l) {
 				lcp_tree_node* parent = lcp_node;
 				lcp_node = lcp_node->right_node;
@@ -571,21 +579,21 @@ public:
 				if(lcp_node == NULL) { // ??
 					unsigned long length;
 					if (starts_with(pattern + r, string + pos[R] - 1 + r, length ) == 0) {
-						printf(".found at %lu , M = %lu\n", pos[R], R);
+//						printf(".found at %lu , M = %lu\n", pos[R], R);
 						expand(pattern, R, r + length);
 						break;
 					} else {
-						printf("not found at %lu , M = %lu\n", pos[R], R);
+//						printf("not found at %lu , M = %lu\n", pos[R], R);
 						return -1;
 					}
 				}
 
-				printf("distance %lu - %lu lcp value %lu\n", M, R, lcp_node->value);
+//				printf("distance %lu - %lu lcp value %lu\n", M, R, lcp_node->value);
 
 				if(r > lcp_node->value) { // pos[M] < P // example
 					L = M;
 					l = lcp_node->value;
-					// way in lcp tree in true
+					// way in lcp tree is true
 				} else if ( r < lcp_node->value) {
 					// !!!???
 					R = M;
@@ -602,7 +610,7 @@ public:
 						r += length;
 						lcp_node = parent->left_node; // correct way in lcp tree
 					} else { // result == 0
-						printf("found at %lu , M = %lu\n", pos[M], M);
+//						printf("found at %lu , M = %lu\n", pos[M], M);
 						expand(pattern, M, r + length);
 						break;
 					}
@@ -614,16 +622,16 @@ public:
 				if(lcp_node == NULL) {
 					unsigned long length;
 					if (starts_with(pattern + l, string + pos[L] - 1 + l, length ) == 0) {
-						printf(".found at %lu , M = %lu\n", pos[L], L);
+//						printf(".found at %lu , M = %lu\n", pos[L], L);
 						expand(pattern, L, l + length);
 						break;
 					} else {
-						printf("not found at %lu , M = %lu\n", pos[L], L);
+//						printf("not found at %lu , M = %lu\n", pos[L], L);
 						return -1;
 					}
 				}
 
-				printf("distance %lu - %lu lcp value %lu\n", L, M, lcp_node->value);
+//				printf("distance %lu - %lu lcp value %lu\n", L, M, lcp_node->value);
 
 				if(l > lcp_node->value) {
 					/// !!!
@@ -646,7 +654,7 @@ public:
 						r = l + length;
 						// way in lcp tree is true
 					} else { // result == 0
-						printf("//found at %lu , M = %lu\n", pos[M], M );
+//						printf("//found at %lu , M = %lu\n", pos[M], M );
 						expand(pattern, M, l + length);
 						break;
 					}
@@ -658,30 +666,30 @@ public:
 				int result = starts_with(pattern + l, string + pos[M] - 1 + l, length);
 				if ( result < 0 ) {
 					if(lcp_node == NULL) {
-						printf("...not found at %lu, M = %lu (less)\n", pos[M], M);
+//						printf("...not found at %lu, M = %lu (less)\n", pos[M], M);
 						return -1;
 					}
 					R = M;
-					printf("l==r go to left lcp\n");
+//					printf("l==r go to left lcp\n");
 					lcp_node = lcp_node->left_node; // go left child
 					r += length;
 				} else if ( result > 0 ) {
 					if(lcp_node == NULL) {
-						printf("...not found at %lu, M = %lu (more)\n", pos[M], M);
+//						printf("...not found at %lu, M = %lu (more)\n", pos[M], M);
 						return -1;
 					}
 					L = M; // lcp == l
-					printf("l==r go to right lcp\n");
+//					printf("l==r go to right lcp\n");
 					lcp_node = lcp_node->right_node; // go to right child
 					l += length;
 				} else {
-					printf("!found at %lu , M = %lu\n", pos[M], M );
+//					printf("!found at %lu , M = %lu\n", pos[M], M );
 					expand(pattern, M, l + length);
 					break; // found
 				}
 			}
 		}
-		return 0; // ?
+		return 0;
 	}
 };
 
@@ -713,59 +721,53 @@ struct char_array {
 };
 
 int main() {
+/*
+	const char* str = "a$";
+	suffix_tree st(str);
+	st.print();
 
-//	const char* str = "tartatarz$";
-//	const char* str = "mississippi$";
-//	const char* str = "axabaxaxaaxxaxaxaxxxaxbbxbxabxabxabxabbabbxabxbbxabxabaxaaababababbabbabxabbaxabxabxbaxbxbaaxbbxabxabxabxabxabxxabxabxabxbaxbaxbaxbaxbaxbabxabxabxabxxaxbaxabxaxbbbxabxabxabxxxabxabxaxxxabxaxxxaxxaxaxaxaxxxaxaxxaxxxaxaxxxaxxxaxxaxbxabxabxaxabxabxabxabxabxabxabxaxbaxbaxbaxbxabaxbaxaxbaxbaxbaxbxaxbaxbaxbxaxabxaxxbaxabxaxaxaxabxaxa$";
-
-//	const char* str = "ybycqbdyycyaybabcdcdaabcdbcddabcddabcdbabcdcabcabcddabcddabcdabcabcddaabcabcabcdddbcdabcdabcdabcdabcd$";
-//
-//	suffix_tree st(str);
-//	st.print();
-//
-//	FILE* file = fopen("sarr.txt", "w");
-//
-//	suffix_array sa(st);
-//	sa.print(file);
-//	fclose(file);
-//	// i !
+	FILE* file = fopen("sarr.txt", "w");
+	suffix_array sa(st);
+	sa.print(file);
+	fclose(file);
+*/
+// i !
 //	sa.search_new("abcd");
 
 //	unsigned long len;
 //	int s = starts_with("abax", "axbbxbxabxabxabxabbabbxabxbbxabxab$", len);
 //	printf("%d %lu\n", s, len);
 
+
 	char_array text(100);
+
 	int c;
 	while ((c = getchar() ) != '\n') {
 		text.add(c);
 	}
 	text.add('$');
 	text.add('\0');
-//	printf("%s", text.arr);
-	suffix_tree st(text.arr);
 
-//	st.print();
+	suffix_tree st(text.arr);
 
 	suffix_array sa(st);
 
-	FILE* file = fopen("sarr.txt", "w");
-	sa.print(file);
-	fclose(file);
-
-
+	unsigned long n = 1;
 	while ( (c = getchar() ) != EOF) {
 		char_array pattern;
-		if(c == '\n')
-			break;
+		if(c == '\n') // empty string
+			continue;
 		else
 			pattern.add(c);
 		while( (c = getchar() ) != '\n') {
 			pattern.add(c);
 		}
 		pattern.add('\0');
-		printf("searching %s...\n", pattern.arr);
+//		printf("searching %s...\n", pattern.arr);
+		printf("%lu: ", n);
 		sa.search_new(pattern.arr);
+		printf("\n");
+		n++;
 	}
 
 	return 0;
