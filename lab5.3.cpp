@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <cstring>
-#include <cstdlib>
+#include <string.h>
+#include <stdlib.h>
 
 #define E 0
 #define MIN(X,Y) (((X) < (Y)) ? (X) : (Y))
@@ -180,7 +180,7 @@ class suffix_tree {
 			// node to make suffix link for it
 			suffix_tree_node* prev_last = NULL;
 
-			unsigned long j_star; // last j on previous phase
+			unsigned long j_star = j_i; // last j on previous phase
 //			bool first = true;
 
 			for(unsigned long j = j_i + 1; j <= i + 1; j++) {
@@ -212,6 +212,7 @@ class suffix_tree {
 //						printf("creating suffix link from %lu to %lu\n", prev_last->label,last_node->label);
 						prev_last->suffix_link_node = last_node; // suffix link to last node on the searched path
 					}
+//					j_star = j - 1;
 					break;
 				}
 
@@ -721,8 +722,8 @@ struct char_array {
 };
 
 int main() {
-/*
-	const char* str = "a$";
+	/*
+	const char* str = "caaa$";
 	suffix_tree st(str);
 	st.print();
 
@@ -730,9 +731,10 @@ int main() {
 	suffix_array sa(st);
 	sa.print(file);
 	fclose(file);
-*/
+
 // i !
-//	sa.search_new("abcd");
+	sa.search_new("aaa");
+	*/
 
 //	unsigned long len;
 //	int s = starts_with("abax", "axbbxbxabxabxabxabbabbxabxbbxabxab$", len);
