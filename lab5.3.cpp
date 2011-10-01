@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <cstring>
+#include <cstdlib>
 
 #define E 0
 #define MIN(X,Y) (((X) < (Y)) ? (X) : (Y))
@@ -25,6 +26,7 @@ int starts_with(const char* str1, const char* str2, unsigned long& length ) {
 	}
 }
 
+// return true if str2 starts with str1, comparing starts from skip - 1 chars
 bool starts(const char* str1, const char* str2, unsigned long skip) {
 	printf("comparing %s & %s skip = %lu\n", str1, str2, skip);
 	unsigned long n = skip - 1;
@@ -41,6 +43,50 @@ bool starts(const char* str1, const char* str2, unsigned long skip) {
 	}
 	printf("true\n");
 	return true;
+}
+
+template <class number>
+void swap(number& el1, number& el2) {
+    number s = el1;
+    el1 = el2;
+    el2 = s;
+}
+
+template <class number>
+unsigned long partition(number* section, unsigned long start, unsigned long finish, bool (*compare)(number, number) )
+{
+ unsigned long pivot = start;
+ number value = section[pivot];
+   for( unsigned long index = start + 1; index < finish ; ++index )
+     if( !compare( section[index], value ) )
+       swap(section[index], section[++pivot]);
+  swap(section[start], section[pivot]);
+ return pivot;
+}
+
+template <class number>
+void quicksort(number* section, unsigned long start, unsigned long finish, bool (*compare)(number, number) )
+{
+    if(start < finish)
+  {
+   unsigned long pivot = partition(section, start, finish, compare);
+   quicksort(section, start, pivot, compare);
+   quicksort(section, pivot + 1, finish, compare);
+  }
+ return;
+}
+
+template <class number>
+void quicksort(number* section, unsigned long length, bool (*compare)(number, number) )
+{
+ quicksort(section, 0, length, compare);
+}
+
+bool compare(unsigned long el1, unsigned long el2) {
+    if(el1 >= el2)
+        return true;
+    else
+        return false;
 }
 
 struct suffix_tree_node;
@@ -434,6 +480,46 @@ class suffix_array {
 		printf("returned value: %lu\n", j);
 		return j;
 	}
+	// find left and rigth borders of matching interval of pos array (based on founded value M)
+	void expand( const char* pattern, unsigned long M, unsigned long skip ) {
+		unsigned long start, end;
+		printf("***\n");
+		unsigned long n = M - 1;
+		while (starts(pattern, string + pos[n] - 1, skip) && n > 0) {
+			n--;
+		}
+		n++;
+		start = n;
+		while(n <= M) {
+			printf("%lu -", pos[n]);
+			n++;
+		}
+		while (starts(pattern, string + pos[n] - 1, skip) && n < size) {
+			printf("%lu !", pos[n]);
+			n++;
+		}
+		end = n - 1;
+		printf("start %lu, end %lu", start, end);
+
+		printf("\n");
+		// output unsorted array:
+		printf("unsorted array\n");
+		for(unsigned long i = start; i <= end; i++) {
+			printf("%lu ", pos[i]);
+		}
+		printf("\n");
+		// copy suffix array interval
+		unsigned long size = end - start + 1;
+		unsigned long* result = new unsigned long[ size ];
+		memcpy(result, pos + start, size * sizeof(unsigned long));
+		quicksort(result, size, compare);
+
+		for(unsigned long i = 0; i < size; i++) {
+			printf("%lu ", result[i]);
+		}
+		printf("\n");
+		delete[] result;
+	}
 
 public:
 
@@ -455,29 +541,6 @@ public:
 			}
 			fprintf(file, "\n");
 		}
-	}
-
-	// find left and rigth borders of matching interval of pos array (based on founded value M)
-	void expand( const char* pattern, unsigned long M, unsigned long skip ) {
-		unsigned long start, end;
-		printf("***\n");
-		unsigned long n = M - 1;
-		while (starts(pattern, string + pos[n] - 1, skip) && n > 0) {
-			n--;
-		}
-		n++;
-		start = n;
-		while(n <= M) {
-			printf("%lu -", pos[n]);
-			n++;
-		}
-		while (starts(pattern, string + pos[n] - 1, skip) && n < size) {
-			printf("%lu !", pos[n]);
-			n++;
-		}
-		end = n - 1;
-		printf("start %lu, end %lu", start, end);
-		printf("\n");
 	}
 
 	int search_new(const char* pattern) {
@@ -622,30 +685,88 @@ public:
 	}
 };
 
+struct char_array {
+
+	char* arr;
+	unsigned long size;
+	unsigned long capacity;
+
+	char_array(unsigned long initial_capacity = 10) {
+		size = 0;
+		this->capacity = initial_capacity;
+		arr = (char*) malloc(initial_capacity);
+		//if(arr == 0)
+	}
+
+	~char_array() {
+		free(arr);
+	}
+
+	void add(const char element) {
+		if(size + 1 == capacity) {
+			capacity = capacity * 1.5 + 1;
+			arr = (char*) realloc(arr, capacity);
+//			if(arr == NULL)
+		}
+		arr[size++] = element;
+	}
+};
+
 int main() {
 
 //	const char* str = "tartatarz$";
 //	const char* str = "mississippi$";
 //	const char* str = "axabaxaxaaxxaxaxaxxxaxbbxbxabxabxabxabbabbxabxbbxabxabaxaaababababbabbabxabbaxabxabxbaxbxbaaxbbxabxabxabxabxabxxabxabxabxbaxbaxbaxbaxbaxbabxabxabxabxxaxbaxabxaxbbbxabxabxabxxxabxabxaxxxabxaxxxaxxaxaxaxaxxxaxaxxaxxxaxaxxxaxxxaxxaxbxabxabxaxabxabxabxabxabxabxabxaxbaxbaxbaxbxabaxbaxaxbaxbaxbaxbxaxbaxbaxbxaxabxaxxbaxabxaxaxaxabxaxa$";
 
-	const char* str = "ybycqbdyycyaybabcdcdaabcdbcddabcddabcdbabcdcabcabcddabcddabcdabcabcddaabcabcabcdddbcdabcdabcdabcdabcd$";
-
-	suffix_tree st(str);
-	st.print();
-
-	FILE* file = fopen("sarr.txt", "w");
-
-	suffix_array sa(st);
-	sa.print(file);
-	fclose(file);
-	// i !
-	sa.search_new("abcab");
-
-
+//	const char* str = "ybycqbdyycyaybabcdcdaabcdbcddabcddabcdbabcdcabcabcddabcddabcdabcabcddaabcabcabcdddbcdabcdabcdabcdabcd$";
+//
+//	suffix_tree st(str);
+//	st.print();
+//
+//	FILE* file = fopen("sarr.txt", "w");
+//
+//	suffix_array sa(st);
+//	sa.print(file);
+//	fclose(file);
+//	// i !
+//	sa.search_new("abcd");
 
 //	unsigned long len;
 //	int s = starts_with("abax", "axbbxbxabxabxabxabbabbxabxbbxabxab$", len);
 //	printf("%d %lu\n", s, len);
+
+	char_array text(100);
+	int c;
+	while ((c = getchar() ) != '\n') {
+		text.add(c);
+	}
+	text.add('$');
+	text.add('\0');
+//	printf("%s", text.arr);
+	suffix_tree st(text.arr);
+
+//	st.print();
+
+	suffix_array sa(st);
+
+	FILE* file = fopen("sarr.txt", "w");
+	sa.print(file);
+	fclose(file);
+
+
+	while ( (c = getchar() ) != EOF) {
+		char_array pattern;
+		if(c == '\n')
+			break;
+		else
+			pattern.add(c);
+		while( (c = getchar() ) != '\n') {
+			pattern.add(c);
+		}
+		pattern.add('\0');
+		printf("searching %s...\n", pattern.arr);
+		sa.search_new(pattern.arr);
+	}
 
 	return 0;
 }
